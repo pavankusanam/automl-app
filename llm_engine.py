@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 from google import genai
 
-
 load_dotenv()
 
 
@@ -15,9 +14,23 @@ class GeminiCodeGenerator:
     model_name: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     def __post_init__(self) -> None:
-        api_key = os.getenv("GEMINI_API_KEY")
+        api_key = None
+
+        try:
+            import streamlit as st
+            if "GEMINI_API_KEY" in st.secrets:
+                api_key = st.secrets["GEMINI_API_KEY"]
+            if "GEMINI_MODEL" in st.secrets:
+                self.model_name = st.secrets["GEMINI_MODEL"]
+        except Exception:
+            pass
+
         if not api_key:
-            raise ValueError("GEMINI_API_KEY is missing. Put it in your .env file.")
+            api_key = os.getenv("GEMINI_API_KEY")
+
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY is missing. Add it to Streamlit secrets or .env.")
+
         self.client = genai.Client(api_key=api_key)
 
     def generate_code(self, system_prompt: str, user_prompt: str) -> str:
